@@ -35,7 +35,7 @@ using namespace std;
 #endif
 
 #define NUMOFDIRS 8
-#define e 1000
+#define e 10
 
 class node{
 public:
@@ -137,6 +137,11 @@ static void planner(
                 //check if the neighbor has been visited before
                 if (openPtrList[neighborX][neighborY]){
                     neighborPtr = openPtrList[neighborX][neighborY];
+                    //update the gvalue and the parent
+                    if(neighborPtr->g > currentPtr->g + neighborPtr->cost){
+                        neighborPtr->g = currentPtr->g + neighborPtr->cost;
+                        neighborPtr->parent = currentPtr;
+                    }
                 }
                 else{
                     neighborPtr = new node();
@@ -145,19 +150,11 @@ static void planner(
                     neighborPtr->h = calculate_heuristic(neighborPtr, goalPtr);
                     neighborPtr->cost = (int)map[GETMAPINDEX(neighborX,neighborY,x_size,y_size)];
                     openPtrList[neighborX][neighborY] = neighborPtr;
-                    //add the neighbor to the open
-                }
 
-                //update the gvalue and the parent
-                if(neighborPtr->g){
-                    if(neighborPtr->g > currentPtr->g + neighborPtr->cost){
-                        neighborPtr->g = currentPtr->g + neighborPtr->cost;
-                        neighborPtr->parent = currentPtr;
-                    }
-                }
-                else{
+                    //update the g values
                     neighborPtr->g = currentPtr->g + neighborPtr->cost;
                     neighborPtr->parent = currentPtr;
+                    open_list.push(neighborPtr);
                 }
             }
         }
