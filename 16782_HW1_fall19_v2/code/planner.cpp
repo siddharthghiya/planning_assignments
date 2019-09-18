@@ -5,6 +5,10 @@
  *=================================================================*/
 #include <math.h>
 #include <mex.h>
+#include <iostream>
+using namespace std;
+#include <queue>
+#include <vector>
 
 /* Input Arguments */
 #define	MAP_IN                  prhs[0]
@@ -31,6 +35,32 @@
 #endif
 
 #define NUMOFDIRS 8
+#define e 1000
+
+class node{
+public:
+    int posX, posY;
+    double h;
+    double g = NULL;
+    int cost;
+    node* parent;
+};
+
+struct CompareG{
+    bool operator()(const node* lhs, const node* rhs) const
+    {
+        return (lhs->g + e*lhs->h) > (rhs->g + e*rhs->h);
+    }
+};
+
+double calculate_heuristic(node* nodePtr, node* goalPtr){
+        int startX = nodePtr->posX;
+        int startY = nodePtr->posY;
+        int goalX = goalPtr->posX;
+        int goalY = goalPtr->posY;
+        
+        return (double)sqrt(((startX-goalX)*(startX-goalX) + (startY-goalY)*(startY-goalY)));
+    }
 
 static void planner(
         double*	map,
@@ -46,45 +76,103 @@ static void planner(
         int curr_time,
         double* action_ptr
         )
-{
+{   
     // 8-connected grid
     int dX[NUMOFDIRS] = {-1, -1, -1,  0,  0,  1, 1, 1};
     int dY[NUMOFDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1};
     
     // for now greedily move towards the final target position,
     // but this is where you can put your planner
-
     int goalposeX = (int) target_traj[target_steps-1];
     int goalposeY = (int) target_traj[target_steps-1+target_steps];
-    // printf("robot: %d %d;\n", robotposeX, robotposeY);
-    // printf("goal: %d %d;\n", goalposeX, goalposeY);
 
-    int bestX = 0, bestY = 0; // robot will not move if greedy action leads to collision
-    double olddisttotarget = (double)sqrt(((robotposeX-goalposeX)*(robotposeX-goalposeX) + (robotposeY-goalposeY)*(robotposeY-goalposeY)));
-    double disttotarget;
-    for(int dir = 0; dir < NUMOFDIRS; dir++)
-    {
-        int newx = robotposeX + dX[dir];
-        int newy = robotposeY + dY[dir];
+    // various important instantiations
+    priority_queue<node*, vector<node*>, CompareG> open_list;
+    vector<node*> closed_list;
+    node* currentPtr;
+    node* previousPtr;
+    vector<vector<node*>> openPtrList(x_size, vector<node*>(y_size));
+    vector<vector<bool>> closedPtrList(x_size, vector<bool>(y_size));
+    int neighborX, neighborY;
 
-        if (newx >= 1 && newx <= x_size && newy >= 1 && newy <= y_size)
-        {
-            if (((int)map[GETMAPINDEX(newx,newy,x_size,y_size)] >= 0) && ((int)map[GETMAPINDEX(newx,newy,x_size,y_size)] < collision_thresh))  //if free
-            {
-                disttotarget = (double)sqrt(((newx-goalposeX)*(newx-goalposeX) + (newy-goalposeY)*(newy-goalposeY)));
-                if(disttotarget < olddisttotarget)
-                {
-                    olddisttotarget = disttotarget;
-                    bestX = dX[dir];
-                    bestY = dY[dir];
+    //Create the goal_node pointer and store it's values.
+    node* goalPtr = new node();
+    goalPtr->posX = targetposeX;
+    goalPtr->posY = targetposeY;
+
+    //Create the start_node pointer and store it's values, push it into the open_list.
+    node* startPtr = new node();
+    startPtr->posX = robotposeX; 
+    startPtr->posY = robotposeY;
+    startPtr->h = calculate_heuristic(startPtr, goalPtr);
+    open_list.push(startPtr);
+
+    int steps = 0;
+    //A* search
+    while(true){
+        //remove the top node from the open_list with the minimum f value and add it to the closed list.
+        currentPtr = open_list.top();
+        open_list.pop();
+        closed_list.push_back(currentPtr);
+        closedPtrList[currentPtr->posX][currentPtr->posY] = true;
+
+        //if the current node added to the closed_list is the goal node, exit the A* search
+        if ((currentPtr->posX == goalPtr->posX) && (currentPtr->posY == goalPtr->posY)){
+            break;
+        }
+
+        //go through the neighbours of the current node.
+        for (int dir = 0; dir < NUMOFDIRS; dir++){
+            int neighborX = currentPtr->posX + dX[dir];
+            int neighborY = currentPtr->posY + dY[dir];
+
+            //if the neighbor is already in the closed list, skip.
+            if (closedPtrList[neighborX][neighborY]){
+                continue;
+            }
+            //only if the neighbor is within bounds and within collision threshold
+            if ((neighborX >= 1 && neighborX <= x_size && neighborY >= 1 && neighborY <= y_size) && ((int)map[GETMAPINDEX(neighborX,neighborY,x_size,y_size)] < collision_thresh)){
+
+                node* neighborPtr = NULL;    
+                //check if the neighbor has been visited before
+                if (openPtrList[neighborX][neighborY]){
+                    neighborPtr = openPtrList[neighborX][neighborY];
+                }
+                else{
+                    neighborPtr = new node();
+                    neighborPtr->posX = neighborX;
+                    neighborPtr->posY = neighborY;
+                    neighborPtr->h = calculate_heuristic(neighborPtr, goalPtr);
+                    neighborPtr->cost = (int)map[GETMAPINDEX(neighborX,neighborY,x_size,y_size)];
+                    openPtrList[neighborX][neighborY] = neighborPtr;
+                    //add the neighbor to the open
+                }
+
+                //update the gvalue and the parent
+                if(neighborPtr->g){
+                    if(neighborPtr->g > currentPtr->g + neighborPtr->cost){
+                        neighborPtr->g = currentPtr->g + neighborPtr->cost;
+                        neighborPtr->parent = currentPtr;
+                    }
+                }
+                else{
+                    neighborPtr->g = currentPtr->g + neighborPtr->cost;
+                    neighborPtr->parent = currentPtr;
                 }
             }
         }
+        previousPtr = currentPtr;
+        steps += 1;
     }
-    robotposeX = robotposeX + bestX;
-    robotposeY = robotposeY + bestY;
-    action_ptr[0] = robotposeX;
-    action_ptr[1] = robotposeY;
+
+    //retrace the path back to start node.
+    while(currentPtr->parent->parent != NULL){
+        currentPtr = currentPtr->parent;
+    }
+
+    //set the action
+    action_ptr[0] = currentPtr->posX;
+    action_ptr[1] = currentPtr->posY;
     
     return;
 }
