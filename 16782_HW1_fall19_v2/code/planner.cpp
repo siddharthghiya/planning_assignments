@@ -9,6 +9,7 @@
 using namespace std;
 #include <queue>
 #include <vector>
+#include<unordered_map>
 
 /* Input Arguments */
 #define	MAP_IN                  prhs[0]
@@ -62,6 +63,12 @@ double calculate_heuristic(node* nodePtr, node* goalPtr){
         return (double)sqrt(((startX-goalX)*(startX-goalX) + (startY-goalY)*(startY-goalY)));
     }
 
+int getKey(int posX, int posY, int sizeX, int sizeY){
+    int key =  posY * sizeX + posX;
+
+    return key;
+}
+
 static void planner(
         double*	map,
         int collision_thresh,
@@ -91,9 +98,9 @@ static void planner(
     vector<node*> closed_list;
     node* currentPtr;
     node* previousPtr;
-    vector<vector<node*>> openPtrList(x_size, vector<node*>(y_size));
-    vector<vector<bool>> closedPtrList(x_size, vector<bool>(y_size));
-    int neighborX, neighborY;
+    unordered_map<int, node*> openPtrList;
+    unordered_map<int, bool> closedPtrList;
+    int neighborX, neighborY, neighborKey, currentKey;
 
     //Create the goal_node pointer and store it's values.
     node* goalPtr = new node();
@@ -114,7 +121,8 @@ static void planner(
         currentPtr = open_list.top();
         open_list.pop();
         closed_list.push_back(currentPtr);
-        closedPtrList[currentPtr->posX][currentPtr->posY] = true;
+        currentKey = getKey(currentPtr->posX, currentPtr->posY, x_size, y_size);
+        closedPtrList[currentKey] = true;
 
         //if the current node added to the closed_list is the goal node, exit the A* search
         if ((currentPtr->posX == goalPtr->posX) && (currentPtr->posY == goalPtr->posY)){
@@ -125,18 +133,22 @@ static void planner(
         for (int dir = 0; dir < NUMOFDIRS; dir++){
             int neighborX = currentPtr->posX + dX[dir];
             int neighborY = currentPtr->posY + dY[dir];
-
-            //if the neighbor is already in the closed list, skip.
-            if (closedPtrList[neighborX][neighborY]){
-                continue;
-            }
+            
             //only if the neighbor is within bounds and within collision threshold
             if ((neighborX >= 1 && neighborX <= x_size && neighborY >= 1 && neighborY <= y_size) && ((int)map[GETMAPINDEX(neighborX,neighborY,x_size,y_size)] < collision_thresh)){
 
-                node* neighborPtr = NULL;    
+                // generate the neighbor key.
+                neighborKey = getKey(neighborX, neighborY, x_size, y_size);
+                
+                //if the neighbor is already in the closed list, skip.
+                if (closedPtrList[neighborKey]){
+                    continue;
+                }
+
+                node* neighborPtr = NULL; 
                 //check if the neighbor has been visited before
-                if (openPtrList[neighborX][neighborY]){
-                    neighborPtr = openPtrList[neighborX][neighborY];
+                if (openPtrList[neighborKey]){
+                    neighborPtr = openPtrList[neighborKey];
                     //update the gvalue and the parent
                     if(neighborPtr->g > currentPtr->g + neighborPtr->cost){
                         neighborPtr->g = currentPtr->g + neighborPtr->cost;
@@ -149,7 +161,7 @@ static void planner(
                     neighborPtr->posY = neighborY;
                     neighborPtr->h = calculate_heuristic(neighborPtr, goalPtr);
                     neighborPtr->cost = (int)map[GETMAPINDEX(neighborX,neighborY,x_size,y_size)];
-                    openPtrList[neighborX][neighborY] = neighborPtr;
+                    openPtrList[neighborKey] = neighborPtr;
 
                     //update the g values
                     neighborPtr->g = currentPtr->g + neighborPtr->cost;
