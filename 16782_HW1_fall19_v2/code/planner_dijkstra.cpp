@@ -195,9 +195,6 @@ static void planner(
     action_ptr[0] = actions_x[key];
     action_ptr[1] = actions_y[key];
 
-    cout << "pos X " << robotposeX << " action x " << action_ptr[0] << endl;
-    cout << "pos Y " << robotposeY << " action y " << action_ptr[1] << endl;
-
     return;
 }
 

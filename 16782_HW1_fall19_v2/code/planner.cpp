@@ -78,6 +78,7 @@ unordered_map<int,int> calculate_heuristic(int x_size, int y_size, double* targe
     priority_queue<node*, vector<node*>, CompareG> open_list;
     vector<node*> closed_list;
     node* currentPtr;
+    node* neighborPtr;
     unordered_map<int, node*> openPtrList;
     unordered_map<int, bool> closedPtrList;
     int neighborX, neighborY, neighborKey, currentKey, goalKey;
@@ -121,7 +122,6 @@ unordered_map<int,int> calculate_heuristic(int x_size, int y_size, double* targe
                     continue;
                 }
 
-                node* neighborPtr; 
                 //check if the neighbor has been visited before
                 if (openPtrList[neighborKey]){
                     neighborPtr = openPtrList[neighborKey];
@@ -184,6 +184,7 @@ static void planner(
     unordered_map<int, node*> openPtrList;
     unordered_map<int, bool> closedPtrList;
     node* currentPtr;
+    node* neighborPtr;
     int neighborX, neighborY, neighborKey, neighborKey2, currentKey;
     static unordered_map<int,int> heuristic;
     int time;
@@ -197,13 +198,14 @@ static void planner(
     open_list.push(startPtr);
     
     if (curr_time == 0){
-        auto start = high_resolution_clock::now();
+        // auto start = high_resolution_clock::now();
         heuristic = calculate_heuristic(x_size, y_size, target_traj, target_steps, map, collision_thresh);
-        auto stop = high_resolution_clock::now(); 
-        auto duration = duration_cast<milliseconds>(stop - start); 
-        cout << duration.count() << endl;
+        // auto stop = high_resolution_clock::now(); 
+        // auto duration = duration_cast<milliseconds>(stop - start); 
+        // cout << duration.count() << endl;
     }
 
+    int steps;
     //A* search  
     while(!open_list.empty()){
         //remove the top node from the open_list with the minimum f value and add it to the closed list.
@@ -223,6 +225,7 @@ static void planner(
             break;
         }
 
+        // auto start = high_resolution_clock::now();
         //go through the neighbours of the current node.
         for (int dir = 0; dir < NUMOFDIRS; dir++){
             neighborX = currentPtr->posX + dX[dir];
@@ -239,7 +242,6 @@ static void planner(
                     continue;
                 }
 
-                node* neighborPtr; 
                 //check if the neighbor has been visited before
                 if (openPtrList[neighborKey]){
                     neighborPtr = openPtrList[neighborKey];
@@ -268,8 +270,12 @@ static void planner(
                 }
             }
         }
+        // auto stop = high_resolution_clock::now(); 
+        // auto duration = duration_cast<microseconds>(stop - start); 
+        // cout << "for " << duration.count() << endl;
+        steps++;
     }
-
+;
     //retrace the path back to start node.
     while(currentPtr->parent->parent != NULL){
         currentPtr = currentPtr->parent;
