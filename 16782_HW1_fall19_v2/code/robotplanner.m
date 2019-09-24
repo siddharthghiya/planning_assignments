@@ -8,7 +8,7 @@ dY = [-1  0  1 -1  1 -1 0 1];
 
 if (MEX == 1)
     % if using MEX, you would call the planner here
-    action = planner(envmap, robotpos, targettraj, targetpos, time, C);
+    action = planner_dijkstra(envmap, robotpos, targettraj, targetpos, time, C);
     
 else
     % otherwise do planning right here
