@@ -38,7 +38,6 @@ using namespace std::chrono;
 #endif
 
 #define NUMOFDIRS 8
-#define e 10
 
 class node{
 public:

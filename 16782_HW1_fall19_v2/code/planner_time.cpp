@@ -43,7 +43,7 @@ using namespace std::chrono;
 #endif
 
 #define NUMOFDIRS 9
-#define e 200
+#define e 1.5
 
 class node{
 public:
@@ -273,8 +273,6 @@ static void planner(
                 }
             }
         }
-
-        cout << currentPtr->t << " t " << currentPtr->t + extra_time << endl;
         
         // cout << currentPtr->t << endl;
         for (int t = 0; t<= extra_time; t++){
@@ -295,8 +293,8 @@ static void planner(
     }
 
     // cout << step << endl;
-    cout << curr_time << " " << step << " x " << robotposeX << " x " << targetposeX << endl;
-    cout << curr_time << " " << step << " y " << robotposeY << " y " << targetposeY << endl;
+    // cout << curr_time << " " << step << " x " << robotposeX << " x " << targetposeX << endl;
+    // cout << curr_time << " " << step << " y " << robotposeY << " y " << targetposeY << endl;
     key = GETKEYINDEX(robotposeX, robotposeY, step, x_size, y_size, target_steps);
     //set the action
     action_ptr[0] = actions_x[key];
