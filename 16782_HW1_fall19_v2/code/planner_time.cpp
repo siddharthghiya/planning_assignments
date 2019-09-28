@@ -48,7 +48,7 @@ using namespace std::chrono;
 class node{
 public:
     int posX, posY;
-    double h;
+    float h;
     double g;
     int t;
     int cost;
@@ -189,6 +189,7 @@ static void planner(
     node* previousPtr;
     int neighborX, neighborY, neighborKey, neighborKey2, currentKey, key;
     unordered_map<int,int> heuristic;
+    unordered_map<int, int> count;
     int time, extra_time;
     clock_t start, end;
     static int step;
@@ -260,7 +261,8 @@ static void planner(
                         neighborPtr->posX = neighborX;
                         neighborPtr->posY = neighborY;
                         neighborKey2 = GETMAPINDEX(neighborX, neighborY, x_size, y_size);
-                        neighborPtr->h = heuristic[neighborKey2];
+                        count[neighborKey2] = count[neighborKey2] + 1;
+                        neighborPtr->h = heuristic[neighborKey2] * count[neighborKey2];
                         neighborPtr->cost = (int)map[neighborKey2];
                         openPtrList[neighborKey] = neighborPtr;
 

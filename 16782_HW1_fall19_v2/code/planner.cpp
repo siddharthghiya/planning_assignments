@@ -77,13 +77,15 @@ static void planner(
 
     // various important instantiations
     priority_queue<node*, vector<node*>, CompareG> open_list;
-    vector<node*> closed_list;
+    // vector<node*> closed_list;
     node* currentPtr;
     node* aimPtr;
     node* previousPtr;
+    node* neighborPtr;
     unordered_map<int, node*> openPtrList;
     unordered_map<int, bool> closedPtrList;
-    int neighborX, neighborY, neighborKey, currentKey, key, minCost, time;
+    int neighborX, neighborY, neighborKey, currentKey, key, time;
+    int minCost = 0;
     static unordered_map<int, int> actions_x;
     static unordered_map<int, int> actions_y;
 
@@ -91,6 +93,7 @@ static void planner(
     node* startPtr = new node();
     startPtr->posX = robotposeX; 
     startPtr->posY = robotposeY;
+    startPtr->g = 0;
     open_list.push(startPtr);
     openPtrList[GETMAPINDEX(startPtr->posX, startPtr->posY, x_size, y_size)] = startPtr;  
     
@@ -100,7 +103,7 @@ static void planner(
             //remove the top node from the open_list with the minimum f value and add it to the closed list.
             currentPtr = open_list.top();
             open_list.pop();
-            closed_list.push_back(currentPtr);
+            // closed_list.push_back(currentPtr);
             currentKey = GETMAPINDEX(currentPtr->posX, currentPtr->posY, x_size, y_size);
 
             //if the pointer has already been popped, continue.
@@ -126,7 +129,7 @@ static void planner(
                         continue;
                     }
 
-                    node* neighborPtr = NULL; 
+                    // node* neighborPtr = NULL; 
                     //check if the neighbor has been visited before
                     if (openPtrList[neighborKey]){
                         neighborPtr = openPtrList[neighborKey];
