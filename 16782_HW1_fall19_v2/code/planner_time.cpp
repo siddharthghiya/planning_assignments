@@ -48,7 +48,7 @@ using namespace std::chrono;
 class node{
 public:
     int posX, posY;
-    float h;
+    double h;
     double g;
     int t;
     int cost;
@@ -76,23 +76,25 @@ unordered_map<int,int> calculate_heuristic(int x_size, int y_size, double* targe
 
     // various important instantiations
     priority_queue<node*, vector<node*>, CompareG> open_list;
-    vector<node*> closed_list;
     node* currentPtr;
     node* neighborPtr;
     unordered_map<int, node*> openPtrList;
     unordered_map<int, bool> closedPtrList;
-    int neighborX, neighborY, neighborKey, currentKey, goalKey;
+    int neighborX, neighborY, neighborKey, currentKey;
     unordered_map<int,int> heuristic(GETMAPINDEX(x_size, y_size, x_size, y_size));
 
     //initialise all the trajectory nodes and put it in the open_list.
     for (int i = 0; i < time_steps; i++){
-        currentKey = GETMAPINDEX(target_traj[i-1], target_traj[i-1+time_steps], x_size, y_size);
-        heuristic[currentKey] = 0;
+        currentKey = GETMAPINDEX(target_traj[i], target_traj[i+time_steps], x_size, y_size);
         currentPtr = new node();
-        currentPtr->posX = target_traj[i-1];
-        currentPtr->posY = target_traj[i-1+time_steps];
+        currentPtr->posX = target_traj[i];
+        currentPtr->posY = target_traj[i+time_steps];
+        currentPtr->g = 0;
+        currentPtr->cost = (int)map[GETMAPINDEX(currentPtr->posX,currentPtr->posY,x_size,y_size)];
+        heuristic[currentKey] = currentPtr->g;
         open_list.push(currentPtr);
     }
+
     //Dijkstra search for heuristic
     while(!open_list.empty()){
         //remove the top node from the open_list with the minimum f value and add it to the closed list.
@@ -126,8 +128,8 @@ unordered_map<int,int> calculate_heuristic(int x_size, int y_size, double* targe
                 if (openPtrList[neighborKey]){
                     neighborPtr = openPtrList[neighborKey];
                     //update the gvalue and the parent
-                    if(neighborPtr->g > currentPtr->g + currentPtr->cost){
-                        neighborPtr->g = currentPtr->g + currentPtr->cost;
+                    if(neighborPtr->g > currentPtr->g + neighborPtr->cost){
+                        neighborPtr->g = currentPtr->g + neighborPtr->cost;
                         heuristic[neighborKey] = neighborPtr->g;
                         open_list.push(neighborPtr);
                     }
@@ -140,7 +142,7 @@ unordered_map<int,int> calculate_heuristic(int x_size, int y_size, double* targe
                     openPtrList[neighborKey] = neighborPtr;
 
                     //update the g values
-                    neighborPtr->g = currentPtr->g + currentPtr->cost;
+                    neighborPtr->g = currentPtr->g + neighborPtr->cost;
                     heuristic[neighborKey] = neighborPtr->g;
                     open_list.push(neighborPtr);
                 }
@@ -152,10 +154,10 @@ unordered_map<int,int> calculate_heuristic(int x_size, int y_size, double* targe
 
 bool goalReached(node* currentPtr, double* target_traj, int target_steps, int extra_time){
     // check from current time step(curr_time) to the end time step(target_steps), if any of the goal state has been expanded
-    int time;
-    time = currentPtr->t;
+    int time1;
+    time1 = currentPtr->t;
 
-    if ((currentPtr->posX == target_traj[time + extra_time]) && (currentPtr->posY == target_traj[time + extra_time + target_steps])){
+    if ((currentPtr->posX == target_traj[time1 + extra_time]) && (currentPtr->posY == target_traj[time1 + extra_time + target_steps])){
             return true;
         }
     return false;
@@ -177,36 +179,42 @@ static void planner(
         )
 {   
     // 8-connected grid. Add extra dx and dy to signify staying at a position.
-    int dX[NUMOFDIRS] = {-1, -1, -1,  0,  0,  1, 1, 1, 0};
-    int dY[NUMOFDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1, 0};
-    
-    // various important instantiations
-    priority_queue<node*, vector<node*>, CompareH> open_list;
-    unordered_map<int, node*> openPtrList;
-    unordered_map<int, bool> closedPtrList;
-    node* currentPtr;
-    node* neighborPtr;
-    node* previousPtr;
-    int neighborX, neighborY, neighborKey, neighborKey2, currentKey, key;
-    unordered_map<int,int> heuristic;
-    unordered_map<int, int> count;
-    int time, extra_time;
-    clock_t start, end;
+    int dX[NUMOFDIRS] = {-1, -1, -1,  0,  0,  1, 1, 0};
+    int dY[NUMOFDIRS] = {-1,  0,  1, -1,  1, -1, 0, 0};
+    int key;
     static int step;
     static unordered_map<int, int> actions_x;
     static unordered_map<int, int> actions_y;
-
-    //Create the start_node pointer and store it's values, push it into the open_list.
-    node* startPtr = new node();
-    startPtr->posX = robotposeX; 
-    startPtr->posY = robotposeY;
-    startPtr->t = curr_time;
-    open_list.push(startPtr);
     
     if (curr_time == 0){
+        time_t start;
         step = 0;
-        start = clock();
+        start = time(NULL);
+
+        // various important instantiations
+        static priority_queue<node*, vector<node*>, CompareH> open_list;
+        static unordered_map<int, node*> openPtrList;
+        static unordered_map<int, bool> closedPtrList;
+        unordered_map<int, int> count;
+        unordered_map<int,int> heuristic;
+        node* currentPtr;
+        node* neighborPtr;
+        node* previousPtr;
+        time_t end;
+        int neighborX, neighborY, neighborKey, neighborKey2, currentKey,time1, extra_time;
+
+        //clear the open_list, openPtrList, closedPtrList.
+        open_list = priority_queue<node*, vector<node*>, CompareH>();
+        openPtrList.clear();
+        closedPtrList.clear();
         heuristic = calculate_heuristic(x_size, y_size, target_traj, target_steps, map, collision_thresh);
+
+        //Create the start_node pointer and store it's values, push it into the open_list.
+        node* startPtr = new node();
+        startPtr->posX = robotposeX; 
+        startPtr->posY = robotposeY;
+        startPtr->t = curr_time;
+        open_list.push(startPtr);
         
         //A* search  
         while(!open_list.empty()){
@@ -214,7 +222,7 @@ static void planner(
             currentPtr = open_list.top();
             open_list.pop();
             currentKey = GETKEYINDEX(currentPtr->posX, currentPtr->posY, currentPtr->t, x_size, y_size, target_steps);
-            time = currentPtr->t;
+            time1 = currentPtr->t;
 
             //check if the node has been popped before. If it has, then it is a duplicate entry in the openlist.
             if (closedPtrList[currentKey]){
@@ -222,9 +230,9 @@ static void planner(
             }
             closedPtrList[currentKey] = true;
 
-            end = clock();
-            extra_time = (int) ((double)(end-start))/CLOCKS_PER_SEC + 1;
             //if the current node added to the closed_list is the goal node, exit the A* search
+            end = time(NULL);
+            extra_time = end-start+1;
             if (goalReached(currentPtr, target_traj, target_steps, extra_time)){
                 break;
             }
@@ -238,7 +246,7 @@ static void planner(
                 if ((neighborX >= 1 && neighborX <= x_size && neighborY >= 1 && neighborY <= y_size) && ((int)map[GETMAPINDEX(neighborX,neighborY,x_size,y_size)] < collision_thresh)){
 
                     // generate the neighbor key.
-                    neighborKey = GETKEYINDEX(neighborX, neighborY, time+1, x_size, y_size, target_steps);
+                    neighborKey = GETKEYINDEX(neighborX, neighborY, time1+1, x_size, y_size, target_steps);
                 
                     //if the neighbor is already in the closed list, skip.
                     if (closedPtrList[neighborKey]){
@@ -252,7 +260,7 @@ static void planner(
                         if(neighborPtr->g > currentPtr->g + neighborPtr->cost){
                             neighborPtr->g = currentPtr->g + neighborPtr->cost;
                             neighborPtr->parent = currentPtr;
-                            neighborPtr->t = time+1;
+                            neighborPtr->t = time1+1;
                             open_list.push(neighborPtr);
                         }
                     }
@@ -269,14 +277,13 @@ static void planner(
                         //update the g values
                         neighborPtr->g = currentPtr->g + neighborPtr->cost;
                         neighborPtr->parent = currentPtr;
-                        neighborPtr->t = time+1;
+                        neighborPtr->t = time1+1;
                         open_list.push(neighborPtr);
                     }
                 }
             }
         }
-        
-        // cout << currentPtr->t << endl;
+
         for (int t = 0; t<= extra_time; t++){
             currentKey = GETKEYINDEX(currentPtr->posX, currentPtr->posY, currentPtr->t + t, x_size, y_size, target_steps);
             actions_x[currentKey] = currentPtr->posX;
@@ -294,9 +301,6 @@ static void planner(
         }
     }
 
-    // cout << step << endl;
-    // cout << curr_time << " " << step << " x " << robotposeX << " x " << targetposeX << endl;
-    // cout << curr_time << " " << step << " y " << robotposeY << " y " << targetposeY << endl;
     key = GETKEYINDEX(robotposeX, robotposeY, step, x_size, y_size, target_steps);
     //set the action
     action_ptr[0] = actions_x[key];
