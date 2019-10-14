@@ -36,10 +36,11 @@ public:
 	int max_steps(node* qNearPtr, node* qRandPtr);
 	void set_increment_direction(node* qNearPtr, node* qRandPtr, double* direction);
 	node* nearest_neighbor(node* qRandPtr);
-	bool extend(node* qRandPtr);
+	int extend(node* qRandPtr, bool infinitEpsilon);
 	node* sampleNode(int numofDOFs);
 };
 
 node* sampleNode(int numofDOFs);
 int IsValidArmConfiguration(double* angles, int numofDOFs, double*	map, int x_size, int y_size);
 void plannerRRT(double*	map, int x_size, int y_size, double* armstart_anglesV_rad, double* armgoal_anglesV_rad, int numofDOFs, double*** plan, int* planlength);
+void plannerRRTConnect(double* map, int x_size, int y_size, double* armstart_anglesV_rad, double* armgoal_anglesV_rad, int numofDOFs, double*** plan, int* planlength);

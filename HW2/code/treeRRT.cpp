@@ -69,13 +69,13 @@ node* tree::nearest_neighbor(node* qRandPtr){
 }
 
 // given a configuration, find the closest configuration already in the tree and then extend it by epsilon in the direction of qRandPtr to find qNew. Add it to the tree. if the point added to the tree is same as qRandPtr, return true, else false.
-bool tree::extend(node* qRandPtr){
+int tree::extend(node* qRandPtr, bool infinitEpsilon){
 	//important declerations
 	int epsilon = 0;
 	double angles[numofDOFs] = {0};
 	node* qNewPtr = new node(numofDOFs);
-	bool reached = false;
-	int maxSteps = 0;
+	int reached = 0;
+	int steps = 0;
 	double direction[numofDOFs] = {0};
 
 	//find the nearest point in tree and set angles to qNearPtr`s angles.
@@ -88,7 +88,12 @@ bool tree::extend(node* qRandPtr){
 	set_increment_direction(qNearPtr, qRandPtr, direction);
 
 	//find the steps till we have to execute the extend operation.
-	epsilon = min(max_steps(qNearPtr, qRandPtr), MAX_EPSILON);
+	if (!infinitEpsilon){
+		epsilon = min(max_steps(qNearPtr, qRandPtr), MAX_EPSILON);
+	}
+	else{
+		epsilon = max_steps(qNearPtr, qRandPtr);
+	}
 
 	//loop through epsilon steps, to check if the line connecting two configurations is valid or not.
 	for (int i=0; i<epsilon; i++){
@@ -101,12 +106,24 @@ bool tree::extend(node* qRandPtr){
 		if (!IsValidArmConfiguration(angles, numofDOFs, map, x_size, y_size)){
 			break;
 		}
+
+		steps++;
 	}
 
 	//if epsilon == max_steps(qNearPtr, qRandPtr) and if qRandPtr is a valid configuration, change the angles to the qRand's angles. 
-	if ((epsilon == max_steps(qNearPtr, qRandPtr)) && (IsValidArmConfiguration(qRandPtr->angles, numofDOFs, map, x_size, y_size))){
-		qNewPtr = qRandPtr;
-		reached = true;	
+	if ((steps == max_steps(qNearPtr, qRandPtr)) && (IsValidArmConfiguration(qRandPtr->angles, numofDOFs, map, x_size, y_size))){
+		//if extend, dont create a new pointer. if connect, create a new pointer.
+		if (!infinitEpsilon){
+			qNewPtr = qRandPtr;
+		}
+		else{
+			//declare qNewPtr to have the same configuration as angles and add it to the vector of points.
+			for (int j=0; j<numofDOFs; j++){
+				qNewPtr->angles[j] = angles[j];
+			}
+		}
+		//reached the qRandPtr.
+		reached = 2;	
 	}
 
 	else{
@@ -115,7 +132,15 @@ bool tree::extend(node* qRandPtr){
 			for (int j=0; j<numofDOFs; j++){
 				angles[j] -= (MAX_STEP_SIZE)*direction[j];
 			}
+			//trapped.
+			reached = 1;
 		}
+
+		else{
+			//took epsilon steps in direction of qRandPtr.
+			reached = 0;
+		}
+
 		//declare qNewPtr to have the same configuration as angles and add it to the vector of points.
 		for (int j=0; j<numofDOFs; j++){
 			qNewPtr->angles[j] = angles[j];

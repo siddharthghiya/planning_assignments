@@ -308,10 +308,10 @@ void mexFunction( int nlhs, mxArray *plhs[],
 		{
 			plannerRRT(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad, numofDOFs, &plan, &planlength);
 		}
-		// else if (planner_id == RRTCONNECT)
-		// {
-		// 	plannerRRTConnect(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad, numofDOFs, &plan, &planlength);
-		// }
+		else if (planner_id == RRTCONNECT)
+		{
+			plannerRRTConnect(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad, numofDOFs, &plan, &planlength);
+		}
 		// else if (planner_id == RRTSTAR)
 		// {
 		// 	plannerRRTStar(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad, numofDOFs, &plan, &planlength);
@@ -321,7 +321,9 @@ void mexFunction( int nlhs, mxArray *plhs[],
 		// }
 		
 		//dummy planner which only computes interpolated path
-		// planner(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad, numofDOFs, &plan, &planlength); 
+		else{
+			planner(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad, numofDOFs, &plan, &planlength); 
+		}
 		
 		printf("planner returned plan of length=%d\n", planlength); 
 		
