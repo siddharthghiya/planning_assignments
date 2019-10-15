@@ -9,10 +9,11 @@ using namespace std;
 #include <unordered_map>
 #include <random>
 
-#define P_G 0.05
-#define MAX_EPSILON 10
+#define P_G 0.1
+#define MAX_EPSILON 4
 #define PI 3.141592654
-#define MAX_STEP_SIZE PI/200
+#define MAX_STEP_SIZE PI/20
+#define NEAR_RADIUS PI/180
 
 class node{
 public:
@@ -21,11 +22,13 @@ public:
 	node* parent;
 	int t = 0;
 	node(int dof);
+	double cost = 0;
 };
 
 class tree{
 public:
 	vector<node*> nodesPtrList;
+	vector<node*> nearPtrList; //for RRTStar, to get a list of nearby configurations.
 	int numofDOFs;
 	double* map;
 	int x_size;
@@ -37,6 +40,7 @@ public:
 	void set_increment_direction(node* qNearPtr, node* qRandPtr, double* direction);
 	node* nearest_neighbor(node* qRandPtr);
 	int extend(node* qRandPtr, bool infinitEpsilon);
+	void repair();
 	node* sampleNode(int numofDOFs);
 };
 
@@ -44,3 +48,4 @@ node* sampleNode(int numofDOFs);
 int IsValidArmConfiguration(double* angles, int numofDOFs, double*	map, int x_size, int y_size);
 void plannerRRT(double*	map, int x_size, int y_size, double* armstart_anglesV_rad, double* armgoal_anglesV_rad, int numofDOFs, double*** plan, int* planlength);
 void plannerRRTConnect(double* map, int x_size, int y_size, double* armstart_anglesV_rad, double* armgoal_anglesV_rad, int numofDOFs, double*** plan, int* planlength);
+void plannerRRTStar(double* map, int x_size, int y_size, double* armstart_anglesV_rad, double* armgoal_anglesV_rad, int numofDOFs, double*** plan, int* planlength);

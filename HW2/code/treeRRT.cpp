@@ -84,9 +84,6 @@ int tree::extend(node* qRandPtr, bool infinitEpsilon){
 		angles[j] = qNearPtr->angles[j];
 	}
 
-	//set the increment direction
-	set_increment_direction(qNearPtr, qRandPtr, direction);
-
 	//find the steps till we have to execute the extend operation.
 	if (!infinitEpsilon){
 		epsilon = min(max_steps(qNearPtr, qRandPtr), MAX_EPSILON);
@@ -94,6 +91,9 @@ int tree::extend(node* qRandPtr, bool infinitEpsilon){
 	else{
 		epsilon = max_steps(qNearPtr, qRandPtr);
 	}
+
+	//set the increment direction	
+	set_increment_direction(qNearPtr, qRandPtr, direction);
 
 	//loop through epsilon steps, to check if the line connecting two configurations is valid or not.
 	for (int i=0; i<epsilon; i++){
@@ -149,10 +149,119 @@ int tree::extend(node* qRandPtr, bool infinitEpsilon){
 
 	qNewPtr->parent = qNearPtr;
 	qNewPtr->t = qNearPtr->t + 1;
+	qNewPtr->cost = qNearPtr->cost + compute_distance(qNewPtr, qNearPtr);
 
 	nodesPtrList.push_back(qNewPtr);
 
 	return reached;
+}
+
+//for the last added configuration to the tree, repair the graph.
+void tree::repair(){
+	//important intialisations
+	node* qLastPtr = nodesPtrList.back();
+	int distance = 0;
+	node* temp;
+	node* qNearestPtr;
+	int epsilon;
+	double direction[numofDOFs] = {0};
+	int steps = 0;
+	double angles[numofDOFs] = {0};
+
+	//clear last nodesPtrList.
+	nearPtrList.clear();
+
+	//set the list of nearest configurations in nearPtrList. Also, if we find a node within the nearRadius, from which reaching qLastPtr is of smaller cost, set it as the parent of qLastPtr.
+	for(int i=0; i<(nodesPtrList.size()-1); i++){
+		temp = nodesPtrList[i];
+		distance = compute_distance(qLastPtr, temp);
+		if (distance<NEAR_RADIUS){
+			nearPtrList.push_back(temp);
+			
+			//check if cost(temp)+distance(temp, qLastPtr) < qLastPtr->cost. If true, set temp as qNearestPtr if the path from temp to qNearestPtr is collision free.
+			if ((temp->cost + distance) < qLastPtr->cost){
+				//collision check.
+
+				//set angles to temps angles.
+				for (int j=0; j<numofDOFs; j++){
+					angles[j] = temp->angles[j];
+				}
+
+				//set epsilon
+				epsilon = max_steps(qLastPtr, temp);
+
+				//set the direction.
+				set_increment_direction(temp, qLastPtr, direction);
+
+				steps = 0;
+				//loop through epsilon steps, to check if the line connecting two configurations is valid or not.
+				for (int i=0; i<epsilon; i++){
+					// increment current angles by a small step size.
+					for (int j=0; j<numofDOFs; j++){
+						angles[j] += (MAX_STEP_SIZE)*direction[j];
+					}
+					
+					//check if the current angles configuration is valid. If invalid, break loop.
+					if (!IsValidArmConfiguration(angles, numofDOFs, map, x_size, y_size)){
+						break;
+					}
+
+					steps++;
+				}
+
+				if (steps == epsilon){
+					qNearestPtr = temp;
+					qLastPtr->cost = qNearestPtr->cost + distance;
+					qLastPtr->t = qNearestPtr->t + 1;
+					qLastPtr->parent = qNearestPtr;
+				}
+			}
+		}
+	}
+
+	//go through all the nearest configurations. skip if we come across qNearestPtr. If the nearest neighbor have smaller cost through qNearPtr, set qNearPtr as it's parent.
+	for(int i=0; i<nearPtrList.size(); i++){
+		temp = nodesPtrList[i];
+		if (temp == qNearestPtr){
+			continue;
+		}
+		distance = compute_distance(qLastPtr, temp);
+		if ((qLastPtr->cost + distance < temp->cost)){
+			//collision check.
+			//set angles to temps angles.
+			for (int j=0; j<numofDOFs; j++){
+				angles[j] = qLastPtr->angles[j];
+			}
+
+			//set epsilon
+			epsilon = max_steps(qLastPtr, temp);
+
+			//set the direction.
+			set_increment_direction(qLastPtr, temp, direction);
+
+			steps = 0;
+			//loop through epsilon steps, to check if the line connecting two configurations is valid or not.
+			for (int i=0; i<epsilon; i++){
+				// increment current angles by a small step size.
+				for (int j=0; j<numofDOFs; j++){
+					angles[j] += (MAX_STEP_SIZE)*direction[j];
+				}
+				
+				//check if the current angles configuration is valid. If invalid, break loop.
+				if (!IsValidArmConfiguration(angles, numofDOFs, map, x_size, y_size)){
+					break;
+				}
+
+				steps++;
+			}
+
+			if(steps == epsilon){
+				temp->cost = qLastPtr->cost + distance;
+				temp->t = qLastPtr->t + 1;
+				temp->parent = qLastPtr;
+			}
+		}
+	}
 }
 
 //randomly sample a configuration. with p_g, sample goal configuration and with probability (1-p_g) sample a random configuration.

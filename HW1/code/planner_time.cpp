@@ -43,7 +43,7 @@ using namespace std::chrono;
 #endif
 
 #define NUMOFDIRS 9
-#define e 1.5
+#define e 1
 
 class node{
 public:
@@ -269,8 +269,8 @@ static void planner(
                         neighborPtr->posX = neighborX;
                         neighborPtr->posY = neighborY;
                         neighborKey2 = GETMAPINDEX(neighborX, neighborY, x_size, y_size);
-                        count[neighborKey2] = count[neighborKey2] + 1;
-                        neighborPtr->h = heuristic[neighborKey2] * count[neighborKey2];
+                        // count[neighborKey2] = count[neighborKey2] + 1;
+                        neighborPtr->h = heuristic[neighborKey2];
                         neighborPtr->cost = (int)map[neighborKey2];
                         openPtrList[neighborKey] = neighborPtr;
 
