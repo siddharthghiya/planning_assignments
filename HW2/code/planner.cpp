@@ -316,9 +316,9 @@ void mexFunction( int nlhs, mxArray *plhs[],
 		{
 			plannerRRTStar(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad, numofDOFs, &plan, &planlength);
 		}
-		// else{
-		// 	plannerPRM(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad, numofDOFs, &plan, &planlength);
-		// }
+		else if (planner_id == PRM){
+			plannerPRM(map,x_size,y_size, armstart_anglesV_rad, armgoal_anglesV_rad, numofDOFs, &plan, &planlength);
+		}
 		
 		//dummy planner which only computes interpolated path
 		else{

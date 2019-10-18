@@ -65,11 +65,14 @@ void plannerRRT(
 		}
 
 		//if number of steps == 1000, the planner is stuck.
-		if (steps > 100000){
-			cout << "number of samples exceeded 100000, try again" << endl;
+		if (steps > MAX_ITERATIONS_RRT){
+			cout << "number of samples exceeded 35000, try again" << endl;
 			return;
 		}
 		steps++;
+
+		// cout << steps << endl;
+		// cout << (treePtr->nodesPtrList).size() << endl;
 	}
 
 	//set the plan.
@@ -82,7 +85,7 @@ void plannerRRT(
 	}
 	*plan = (double**) malloc(numOfSamples*sizeof(double*));
 	int firstinvalidconf = 1;
-	for (int i = numOfSamples-1; i>=0; i--){
+	for (int i = numOfSamples; i>=0; i--){
 		(*plan)[i] = (double*) malloc(numofDOFs*sizeof(double)); 
 		for(int j = 0; j < numofDOFs; j++){
 			(*plan)[i][j] = temp->angles[j];
@@ -179,8 +182,8 @@ void plannerRRTConnect(
 		reachedConnect = treeConnectPtr->extend(qNewExtendPtr, true);
 
 		//if number of steps == 1000, the planner is stuck.
-		if (steps > 100000){
-			cout << "number of samples exceeded 100000, try again" << endl;
+		if (steps > MAX_ITERATIONS_RRT){
+			cout << "number of samples exceeded 35000, try again" << endl;
 			return;
 		}
 
@@ -194,7 +197,7 @@ void plannerRRTConnect(
 	qLastBackwardPtr = (backwardTreePtr->nodesPtrList).back();
 	numOfSamplesForward = qLastForwardPtr->t; 
 	numOfSamplesBackward = qLastBackwardPtr->t;
-	numOfSamples = numOfSamplesForward + numOfSamplesBackward;
+	numOfSamples = numOfSamplesForward + numOfSamplesBackward + 1;
 
 	if(numOfSamples < 2){
 		printf("the arm is already at the goal\n");
@@ -204,7 +207,7 @@ void plannerRRTConnect(
 
 	//set the plan
 	temp = qLastForwardPtr;
-	for (int i = numOfSamplesForward-1; i>=0; i--){
+	for (int i = numOfSamplesForward; i>=0; i--){
 		(*plan)[i] = (double*) malloc(numofDOFs*sizeof(double)); 
 		for(int j = 0; j < numofDOFs; j++){
 			(*plan)[i][j] = temp->angles[j];
@@ -217,7 +220,7 @@ void plannerRRTConnect(
 	}
 
 	temp = qLastBackwardPtr->parent;
-	for (int i = numOfSamplesForward; i<numOfSamples; i++){
+	for (int i = numOfSamplesForward+1; i<numOfSamples; i++){
 		(*plan)[i] = (double*) malloc(numofDOFs*sizeof(double)); 
 		for(int j = 0; j < numofDOFs; j++){
 			(*plan)[i][j] = temp->angles[j];
@@ -301,8 +304,8 @@ void plannerRRTStar(
 		}
 
 		//if number of steps == 1000, the planner is stuck.
-		if (steps > 100000){
-			cout << "number of samples exceeded 100000, try again" << endl;
+		if (steps > MAX_ITERATIONS_RRT){
+			cout << "number of samples exceeded 35000, try again" << endl;
 			return;
 		}
 		steps++;

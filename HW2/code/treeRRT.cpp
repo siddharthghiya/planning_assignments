@@ -147,11 +147,14 @@ int tree::extend(node* qRandPtr, bool infinitEpsilon){
 		}
 	}
 
-	qNewPtr->parent = qNearPtr;
-	qNewPtr->t = qNearPtr->t + 1;
-	qNewPtr->cost = qNearPtr->cost + compute_distance(qNewPtr, qNearPtr);
+	//only add if we make som eprogress towards qRandPtr.
+	if (steps != 0){
+		qNewPtr->parent = qNearPtr;
+		qNewPtr->t = qNearPtr->t + 1;
+		qNewPtr->cost = qNearPtr->cost + compute_distance(qNewPtr, qNearPtr);
 
-	nodesPtrList.push_back(qNewPtr);
+		nodesPtrList.push_back(qNewPtr);
+	}
 
 	return reached;
 }
@@ -168,7 +171,7 @@ void tree::repair(){
 	int steps = 0;
 	double angles[numofDOFs] = {0};
 
-	//clear last nodesPtrList.
+	//clear last nearPtrList.
 	nearPtrList.clear();
 
 	//set the list of nearest configurations in nearPtrList. Also, if we find a node within the nearRadius, from which reaching qLastPtr is of smaller cost, set it as the parent of qLastPtr.
