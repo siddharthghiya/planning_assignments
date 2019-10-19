@@ -31,8 +31,8 @@ bool graph::local_connect(node* qPtr){
 	node* qNearPtr;
 	bool connected = false;
 
-	for (auto i : nodesPtrMap){
-		temp = i.second;
+	for (int i = 0; i<nodesPtrList.size(); i++){
+		temp = nodesPtrList[i];
 
 		//get the distance of this node from qPtr.
 		distance = compute_distance(qPtr, temp);
@@ -59,14 +59,7 @@ bool graph::local_connect(node* qPtr){
 void graph::add_node(node* qNewPtr){
 	//add edges. This function will add atmost K edges. Only try to add edges in the graph if there already are nodes in the graph.
 	add_edges(qNewPtr);
-
-	array<double, DOF> key;
-	//add the node to nodesPtrMap.
-	for (int i=0; i<numofDOFs; i++){
-		key[i] = qNewPtr->angles[i];
-	}
-
-	nodesPtrMap[key] = qNewPtr;
+	nodesPtrList.push_back(qNewPtr);
 }
 
 //generates nearest neighbors and adds it to nearestNeighbors.
@@ -76,13 +69,13 @@ void graph::add_edges(node* qNewPtr){
 	int neighborsAdded = 0;
 
 	//iterate through all the configurations in the unorderedmap to find all configurations within a particular radius of qNewPtr. Add this to nearestNeighbors vector.
-	for (auto i : nodesPtrMap){
+	for (int i=0; i<nodesPtrList.size(); i++){
 		//add atmost K neighbors.
 		if (neighborsAdded>K){
 			break;
 		}
 
-		temp = i.second;
+		temp = nodesPtrList[i];
 		if ((temp->neighbors).size() < K){
 			distance = compute_distance(qNewPtr, temp);
 			
@@ -156,14 +149,14 @@ int graph::collision_free(node* q1Ptr, node* q2Ptr){
 //set parents for path between q1Ptr and q2Ptr
 bool graph::astar_path(node* q1Ptr, node* q2Ptr){
 	priority_queue<node*, vector<node*>, CompareG> openList;
-	unordered_map<array<double,5>, node*>  openPtrList;
-	unordered_map<array<double,5>, bool>  closedPtrList;
+	unordered_map<int, node*>  openPtrList;
+	unordered_map<int, bool>  closedPtrList;
 	node* currentPtr;
     node* aimPtr;
     node* previousPtr;
     node* neighborPtr;
     int numNeighbors;
-    array<double, DOF> key;
+    int iden;
     bool pathFound = false;
 
     //add q1Ptr to the list.
@@ -181,16 +174,14 @@ bool graph::astar_path(node* q1Ptr, node* q2Ptr){
     	}
 
     	//add the node to nodesPtrMap.
-		for (int i=0; i<numofDOFs; i++){
-			key[i] = currentPtr->angles[i];
-		}
+		iden = currentPtr->iden;
 
     	//if the pointer has already been popped, continue.
-        if (closedPtrList[key]){
+        if (closedPtrList[iden]){
             continue;   
         }
 
-        closedPtrList[key] = true;
+        closedPtrList[iden] = true;
 
         //calculate num of neighbours of currentPtr.
         numNeighbors = (currentPtr->neighbors).size();
@@ -199,18 +190,15 @@ bool graph::astar_path(node* q1Ptr, node* q2Ptr){
         for (int i = 0; i<numNeighbors; i++){
         	neighborPtr = (currentPtr->neighbors)[i];
 
-        	//find key
-			for (int i=0; i<numofDOFs; i++){
-				key[i] = neighborPtr->angles[i];
-			}
+        	iden = neighborPtr->iden;
 
         	//if the neighbor ptr is already in closed list, skip it.
-        	if (closedPtrList[key]){
+        	if (closedPtrList[iden]){
         		continue;
         	}
 
-        	if (openPtrList[key]){
-                neighborPtr = openPtrList[key];
+        	if (openPtrList[iden]){
+                neighborPtr = openPtrList[iden];
                 //update the gvalue and the parent
                 if(neighborPtr->cost > currentPtr->cost + compute_distance(currentPtr, neighborPtr)){
                     neighborPtr->cost = currentPtr->cost + compute_distance(currentPtr, neighborPtr);
@@ -223,7 +211,7 @@ bool graph::astar_path(node* q1Ptr, node* q2Ptr){
                 neighborPtr->cost = currentPtr->cost + compute_distance(currentPtr, neighborPtr);
                 neighborPtr->parent = currentPtr;
                 neighborPtr->t = currentPtr->t + 1;
-                openPtrList[key] = neighborPtr;
+                openPtrList[iden] = neighborPtr;
                 openList.push(neighborPtr);
             }
         }

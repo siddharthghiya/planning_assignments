@@ -26,10 +26,11 @@ void plannerPRM(
 		//randomly sample a configuration. sampleNOde will always return a valid configuration.
 		qNewPtr = sampleValidNode(numofDOFs, map, x_size, y_size);
 
+		//set current i as identification of qNewPtr.
+		qNewPtr->iden = i;
+
 		//add the node to the graph. Connect the new configuration to at most K nearest neighbors. Only connect to neighbors which themselves have less than K neighbors.
 		PRMgraph->add_node(qNewPtr);
-
-		// cout << i << endl;
 	}
 
 	//add the start configuration and the goal configuration to the graph.

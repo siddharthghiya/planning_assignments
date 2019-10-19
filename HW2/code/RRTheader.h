@@ -41,6 +41,7 @@ public:
 	node(int dof);
 	double cost = 0;
 	vector<node*> neighbors;
+	int iden;
 };
 
 struct CompareG{
@@ -71,7 +72,7 @@ public:
 
 class graph{
 public:
-	unordered_map<array<double,DOF>, node*> nodesPtrMap; //an unordered map to map from array of configuration to the pointer of that particular configuration.
+	vector<node*> nodesPtrList; //an unordered map to map from array of configuration to the pointer of that particular configuration.
 	int numofDOFs;
 	double* map;
 	int x_size;
