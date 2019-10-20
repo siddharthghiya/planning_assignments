@@ -15,22 +15,9 @@ using namespace std;
 #define MAX_STEP_SIZE PI/90
 #define NEAR_RADIUS PI/3
 #define MAX_ITERATIONS_RRT 500000
-#define MAX_ITERATIONS_PRM 30000
-#define DOF 5
+#define MAX_ITERATIONS_PRM 40000
 #define K 5
-
-template<class T, size_t N> 
-struct std::hash<std::array<T, N>> {
-    auto operator() (const std::array<T, N>& key) const -> std::size_t
-    {
-        std::hash<T> hasher;
-        size_t result = 0;   // I would still seed this.
-        for(size_t i = 0; i < N; ++i) {
-            result = (result << 1) ^ hasher(key[i]); // ??
-        }
-        return result;
-    }
-};
+#define MAX_TIME 20
 
 class node{
 public:

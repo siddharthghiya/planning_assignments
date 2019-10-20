@@ -1,4 +1,4 @@
-#include "RRTheader.h"
+#include "common_header.h"
 
 //randomly sample a configuration.
 node* sampleValidNode(int numofDOFs, double*	map, int x_size, int y_size){
@@ -25,7 +25,7 @@ graph::graph(int numofDOFs_, double* map_, int x_size_, int y_size_){
 
 //function for connecting a node straight to the nearest point in graph. Useful for adding start and goal confirgurations to already constructed graph.
 bool graph::local_connect(node* qPtr){
-	double minDistance = PI/5;
+	double minDistance = NEAR_RADIUS;
 	double distance;
 	node* temp;
 	node* qNearPtr;
@@ -42,6 +42,7 @@ bool graph::local_connect(node* qPtr){
 			if (collision_free(qPtr, temp)){
 				qNearPtr = temp;
 				connected = true;
+				minDistance = distance;
 			}
 		}
 	}

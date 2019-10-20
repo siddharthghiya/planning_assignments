@@ -1,4 +1,4 @@
-#include "RRTheader.h"
+#include "common_header.h"
 
 //RRT
 void plannerRRT(
@@ -23,6 +23,8 @@ void plannerRRT(
 	*plan = NULL;
 	*planlength = 0;
 	int steps = 0;
+	time_t startTime = time(NULL);
+	time_t endTime = time(NULL);
 
 	//if either of the start or goal configuration is invalid, print that planning is not possible.
 	if (!IsValidArmConfiguration(armstart_anglesV_rad, numofDOFs, map, x_size, y_size)){
@@ -64,20 +66,21 @@ void plannerRRT(
 			break;
 		}
 
+		endTime = time(NULL);
 		//if number of steps == 1000, the planner is stuck.
-		if (steps > MAX_ITERATIONS_RRT){
-			cout << "number of samples exceeded 35000, try again" << endl;
+		if (int(endTime - startTime) + 1 > MAX_TIME){
+			cout << "time out" << endl;
+			delete treePtr;
+			delete qStartPtr;
+			delete qGoalPtr;
 			return;
 		}
 		steps++;
-
-		// cout << steps << endl;
-		// cout << (treePtr->nodesPtrList).size() << endl;
 	}
 
 	//set the plan.
 	temp = qGoalPtr;
-	numOfSamples = qGoalPtr->t;
+	numOfSamples = qGoalPtr->t + 1;
 
 	if(numOfSamples < 2){
 		printf("the arm is already at the goal\n");
@@ -85,7 +88,7 @@ void plannerRRT(
 	}
 	*plan = (double**) malloc(numOfSamples*sizeof(double*));
 	int firstinvalidconf = 1;
-	for (int i = numOfSamples; i>=0; i--){
+	for (int i = numOfSamples-1; i>=0; i--){
 		(*plan)[i] = (double*) malloc(numofDOFs*sizeof(double)); 
 		for(int j = 0; j < numofDOFs; j++){
 			(*plan)[i][j] = temp->angles[j];
@@ -98,6 +101,12 @@ void plannerRRT(
 		temp = temp->parent;
 	}    
 	*planlength = numOfSamples;
+	cout << "cost of the path is : " << qGoalPtr->cost << endl;
+	delete treePtr;
+	delete qStartPtr;
+	delete qGoalPtr;
+	endTime = time(NULL);
+	cout << "time taken : " << int(endTime - startTime) + 1 << endl;
 	return;
 }
 
@@ -127,6 +136,8 @@ void plannerRRTConnect(
 	int numOfSamplesBackward;
 	int reachedExpand;
 	int reachedConnect;
+	time_t startTime = time(NULL);
+	time_t endTime = time(NULL);
 	*plan = NULL;
 	*planlength = 0;
 	int steps = 0;
@@ -181,9 +192,14 @@ void plannerRRTConnect(
 		qNewExtendPtr = (treeExtendPtr->nodesPtrList).back();
 		reachedConnect = treeConnectPtr->extend(qNewExtendPtr, true);
 
+		endTime = time(NULL);
 		//if number of steps == 1000, the planner is stuck.
-		if (steps > MAX_ITERATIONS_RRT){
-			cout << "number of samples exceeded 35000, try again" << endl;
+		if (int(endTime - startTime) + 1 > MAX_TIME){
+			cout << "time out" << endl;
+			delete qStartPtr;
+			delete qGoalPtr;
+			delete forwardTreePtr;
+			delete backwardTreePtr;
 			return;
 		}
 
@@ -233,6 +249,13 @@ void plannerRRTConnect(
 	}
 
 	*planlength = numOfSamples;
+	cout << "cost of the path is : " << qLastBackwardPtr->cost + qLastBackwardPtr->cost << endl;
+	delete qStartPtr;
+	delete qGoalPtr;
+	delete forwardTreePtr;
+	delete backwardTreePtr;
+	endTime = time(NULL);
+	cout << "time taken : " << int(endTime - startTime) + 1 << endl;
 	return;
 }
 
@@ -259,6 +282,8 @@ void plannerRRTStar(
 	*plan = NULL;
 	*planlength = 0;
 	int steps = 0;
+	time_t startTime = time(NULL);
+	time_t endTime = time(NULL);
 
 	//if either of the start or goal configuration is invalid, print that planning is not possible.
 	if (!IsValidArmConfiguration(armstart_anglesV_rad, numofDOFs, map, x_size, y_size)){
@@ -303,9 +328,13 @@ void plannerRRTStar(
 			break;
 		}
 
+		endTime = time(NULL);
 		//if number of steps == 1000, the planner is stuck.
-		if (steps > MAX_ITERATIONS_RRT){
-			cout << "number of samples exceeded 35000, try again" << endl;
+		if (int(endTime - startTime) + 1 > MAX_TIME){
+			cout << "time out" << endl;
+			delete treePtr;
+			delete qStartPtr;
+			delete qGoalPtr;
 			return;
 		}
 		steps++;
@@ -313,7 +342,7 @@ void plannerRRTStar(
 
 	//set the plan.
 	temp = qGoalPtr;
-	numOfSamples = qGoalPtr->t;
+	numOfSamples = qGoalPtr->t + 1;
 
 	if(numOfSamples < 2){
 		printf("the arm is already at the goal\n");
@@ -334,5 +363,11 @@ void plannerRRTStar(
 		temp = temp->parent;
 	}    
 	*planlength = numOfSamples;
+	cout << "cost of the path is : " << qGoalPtr->cost << endl;
+	delete treePtr;
+	delete qStartPtr;
+	delete qGoalPtr;
+	endTime = time(NULL);
+	cout << "time taken : " << int(endTime - startTime) + 1 << endl;
 	return;
 }

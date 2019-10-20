@@ -1,4 +1,4 @@
-#include "RRTheader.h"
+#include "common_header.h"
 
 void plannerPRM(
 	double*	map,
@@ -20,6 +20,8 @@ void plannerPRM(
 	bool pathExists;
 	node* temp;
 	int numOfSamples;
+	time_t startTime = time(NULL);
+	time_t endTime = time(NULL);
 
 	//constructing a graph.
 	for (int i = 0; i<MAX_ITERATIONS_PRM; i++){
@@ -46,13 +48,13 @@ void plannerPRM(
 
 	// //if start and goal have been connected to the graph, see if a path exists.
 	pathExists = PRMgraph->astar_path(qStartPtr, qGoalPtr);
-	numOfSamples = qGoalPtr->t;
+	numOfSamples = qGoalPtr->t + 1;
 
 	if (pathExists){
 		temp = qGoalPtr;
 		*plan = (double**) malloc(numOfSamples*sizeof(double*));
 		int firstinvalidconf = 1;
-		for (int i = numOfSamples; i>=0; i--){
+		for (int i = numOfSamples-1; i>=0; i--){
 			(*plan)[i] = (double*) malloc(numofDOFs*sizeof(double)); 
 			for(int j = 0; j < numofDOFs; j++){
 				(*plan)[i][j] = temp->angles[j];
@@ -63,12 +65,19 @@ void plannerPRM(
 				printf("ERROR: Invalid arm configuration!!!\n");
 			}
 			temp = temp->parent;
-		}    
+		}  
+		cout << "cost of the path is " << qGoalPtr->cost << endl;
 		*planlength = numOfSamples;
 	}
 
 	else{
-		cout << "path not found in 30,000 samples, try again.";
+		cout << "path not found in 30,000 samples, try again " << endl;
 	}
+
+	delete qStartPtr;
+	delete qGoalPtr;
+	delete PRMgraph;
+	endTime = time(NULL);
+	cout << "time taken " << int(endTime - startTime) + 1 << endl;
 	return;
 }

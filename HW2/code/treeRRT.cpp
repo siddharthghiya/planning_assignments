@@ -1,4 +1,4 @@
-#include "RRTheader.h"
+#include "common_header.h"
 
 node::node(int dof){
 	numofDOFs = dof;
@@ -163,7 +163,7 @@ int tree::extend(node* qRandPtr, bool infinitEpsilon){
 void tree::repair(){
 	//important intialisations
 	node* qLastPtr = nodesPtrList.back();
-	int distance = 0;
+	double distance = 0;
 	node* temp;
 	node* qNearestPtr;
 	int epsilon;
@@ -265,6 +265,8 @@ void tree::repair(){
 			}
 		}
 	}
+
+	return;
 }
 
 //randomly sample a configuration. with p_g, sample goal configuration and with probability (1-p_g) sample a random configuration.

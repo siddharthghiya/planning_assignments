@@ -5,7 +5,7 @@
  *=================================================================*/
 #include <math.h>
 #include "mex.h"
-#include "RRTheader.h"
+#include "common_header.h"
 
 /* Input Arguments */
 #define	MAP_IN      prhs[0]
