@@ -102,6 +102,7 @@ void plannerRRT(
 	}    
 	*planlength = numOfSamples;
 	cout << "cost of the path is : " << qGoalPtr->cost << endl;
+	cout << "points added to the tree : " << (treePtr->nodesPtrList).size() << endl; 
 	delete treePtr;
 	delete qStartPtr;
 	delete qGoalPtr;
@@ -250,6 +251,7 @@ void plannerRRTConnect(
 
 	*planlength = numOfSamples;
 	cout << "cost of the path is : " << qLastBackwardPtr->cost + qLastBackwardPtr->cost << endl;
+	cout << "points added to the tree : " << (forwardTreePtr->nodesPtrList).size() + (backwardTreePtr->nodesPtrList).size() << endl;
 	delete qStartPtr;
 	delete qGoalPtr;
 	delete forwardTreePtr;
@@ -364,6 +366,7 @@ void plannerRRTStar(
 	}    
 	*planlength = numOfSamples;
 	cout << "cost of the path is : " << qGoalPtr->cost << endl;
+	cout << "points added to the tree : " << (treePtr->nodesPtrList).size() << endl; 
 	delete treePtr;
 	delete qStartPtr;
 	delete qGoalPtr;
