@@ -15,7 +15,7 @@ using namespace std;
 #define MAX_STEP_SIZE PI/90
 #define NEAR_RADIUS PI/3
 #define MAX_ITERATIONS_RRT 500000
-#define MAX_ITERATIONS_PRM 40000
+#define MAX_ITERATIONS_PRM 10000
 #define K 5
 #define MAX_TIME 20
 
