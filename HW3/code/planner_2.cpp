@@ -17,14 +17,6 @@
 #define ACTION_DEFINITION 4
 #define ACTION_PRECONDITION 5
 #define ACTION_EFFECT 6
-#define HEURISTIC 2
-
-/*
-HEURISTIC definition:
-0 : no heuristic
-1 : inadmissible heuristic
-2 : admissible heuristic
-*/
 
 class GroundedCondition;
 class Condition;
@@ -651,7 +643,6 @@ Env* create_env(char* filename)
             else if (parser == ACTION_DEFINITION)
             {
                 const char* line_c = line.c_str();
-                cout << line_c << endl;
                 if (regex_match(line_c, conditionRegex))
                 {
                     const std::vector<int> submatches = { 1, 2 };
@@ -668,7 +659,7 @@ Env* create_env(char* filename)
                     parser = ACTION_PRECONDITION;
                 }
                 else
-                {   
+                {
                     cout << "Action not specified correctly." << endl;
                     throw;
                 }
@@ -778,12 +769,12 @@ class State{
 public:
     unordered_set<Condition, ConditionHasher, ConditionComparator> conditions;
     GroundedAction* gAction = NULL;
-    State* parent = NULL;
+    State* parent;
     int cost = 0;
     int h = 0;
     int closed = false;
 
-    string get_name(){
+    string get_name() const{
        string name;
         for (auto i : conditions){
             name += i.toString();
@@ -795,25 +786,62 @@ public:
         delete gAction;
         gAction = new GroundedAction(action.get_name(), action.get_args());
     }
+
+    bool operator==(const State& rhs) const
+    {
+        auto lhs_it = this->conditions.begin();
+        auto rhs_it = rhs.conditions.begin();
+        int satisfiedConditions = 0;    
+
+        while (lhs_it != this->conditions.end() && rhs_it != rhs.conditions.end())
+        {   
+            if (*lhs_it == *rhs_it)
+                satisfiedConditions++;
+            ++lhs_it;
+            ++rhs_it;
+        }
+
+        if (satisfiedConditions == conditions.size()){
+            return true;
+        }
+        return false;
+    }
 };
 
-size_t state_key(unordered_set<Condition, ConditionHasher, ConditionComparator>& conditions){
+struct StateComparator
+{
+    bool operator()(const State& lhs, const State& rhs) const
+    {
+        return lhs == rhs;
+    }
+};
+
+struct StateHasher
+{
+    size_t operator()(const State& ac) const
+    {
+        return hash<string>{}(ac.get_name());
+    }
+};
+
+int state_key(unordered_set<Condition, ConditionHasher, ConditionComparator>& conditions){
     ConditionHasher cHasher;
-    size_t key;
+    int key;
     for (auto i : conditions){
+        // key += i.toString();
         key += cHasher(i);
     }
     return key;
 }
 
-bool reached_goal(State* currentStatePtr, State* goalStatePtr){
+bool reached_goal(State& currentState, State& goalState){
     int satisfiedConditions = 0;
-    for (auto i : goalStatePtr->conditions){
-        if((currentStatePtr->conditions).find(i) != (currentStatePtr->conditions).end()){
+    for (auto i : goalState.conditions){
+        if((currentState.conditions).find(i) != (currentState.conditions).end()){
             satisfiedConditions++;
         }
     }
-    if (satisfiedConditions == (goalStatePtr->conditions).size()){
+    if (satisfiedConditions == (goalState.conditions).size()){
         return true;
     }
     return false;
@@ -821,6 +849,7 @@ bool reached_goal(State* currentStatePtr, State* goalStatePtr){
 
 void loopFunction(unordered_map<string, string>& substituteSymbols,const Action& action, vector<Action>& possibleActions, Env* env, list<string>::iterator it, int level, vector<string>& chosenSymbols){
     if (level == (action.get_args()).size()){
+
         //we have all the substitute symbols now.
         list<string> possibleArgs;
         unordered_set<Condition, ConditionHasher, ConditionComparator> possiblePreconditions;
@@ -835,12 +864,7 @@ void loopFunction(unordered_map<string, string>& substituteSymbols,const Action&
         for (auto precondition : action.get_preconditions()){
             list<string> possiblePreconditionArgs;
             for (auto arg : precondition.get_args()){
-                if (substituteSymbols.find(arg) != substituteSymbols.end()){
-                    possiblePreconditionArgs.push_back(substituteSymbols[arg]);
-                }
-                else{
-                    possiblePreconditionArgs.push_back(arg);
-                }
+                possiblePreconditionArgs.push_back(substituteSymbols[arg]);
             }
             possiblePreconditions.insert(Condition(precondition.get_predicate(), possiblePreconditionArgs, precondition.get_truth()));
         }
@@ -883,7 +907,7 @@ Condition convertToConditions(GroundedCondition& gCondition){
 }
 
 //given a state pointer, check if the aciton can be applied or not. If it can be applied, modify the statePtr.
-bool apply_action(const Action& action, unordered_set<Condition, ConditionHasher, ConditionComparator>& conditions, bool calculatingHeuristic = false){
+bool apply_action(const Action& action, unordered_set<Condition, ConditionHasher, ConditionComparator>& conditions){
     int satisfiedConditions = 0;
     //check if the preconditions are satisfied.
     for (auto i : action.get_preconditions()){
@@ -893,9 +917,7 @@ bool apply_action(const Action& action, unordered_set<Condition, ConditionHasher
             }
         }
         else{
-            Condition dummyCondition(i.get_predicate(), i.get_args(), i.get_truth());
-            dummyCondition.change_truth();
-            if(conditions.find(dummyCondition) == conditions.end()){
+            if(conditions.find(i) == conditions.end()){
                 satisfiedConditions++;
             }
         }
@@ -909,13 +931,10 @@ bool apply_action(const Action& action, unordered_set<Condition, ConditionHasher
     for (auto i : action.get_effects()){
         //if the effect is negating a condition
         if (!i.get_truth()){
-            //erase negative conditions when not calculating heuristic.
-            if (!calculatingHeuristic){
-                Condition dummyCondition(i.get_predicate(), i.get_args(), i.get_truth());
-                dummyCondition.change_truth();
-                //this dummyCondition needs to be removed from the state conditions.
-                conditions.erase(dummyCondition);
-            }
+            Condition dummyCondition(i.get_predicate(), i.get_args(), i.get_truth());
+            dummyCondition.change_truth();
+            //this dummyCondition needs to be removed from the state conditions.
+            conditions.erase(dummyCondition);
         }
         else{
             conditions.insert(i);
@@ -926,133 +945,37 @@ bool apply_action(const Action& action, unordered_set<Condition, ConditionHasher
 }
 
 struct CompareF{
-    bool operator()(const State* lhs, const State* rhs) const
+    bool operator()(const State& lhs, const State& rhs) const
     {
-        return (lhs->cost + lhs->h) > (rhs->cost + rhs->h);
+        return (lhs.cost + lhs.h) > (rhs.cost + rhs.h);
     }
 };
 
-int calculate_heuristic(int heuristic_id, State* initialStatePtr, State* goalStatePtr, const vector<Action>& possibleActions){
-    //no heuristic
-    if (heuristic_id == 0){
-        return 0;
-    }
-
-    //inadmissible heuristic
-    if (heuristic_id == 1){
-        return max((int)(initialStatePtr->conditions).size() - (int)(goalStatePtr->conditions).size(),0);
-    }
-
-    //admissible heuristic
-    if (heuristic_id == 2){
-        State* currentStatePtr;
-        State* neighborStatePtr;
-        priority_queue<State*, vector<State*>, CompareF> openList;
-        unordered_map<size_t, State*> openPtrList;
-        unordered_set<Condition, ConditionHasher, ConditionComparator> conditions;
-        bool actionPossible = false;
-        int steps = 0;
-        size_t neighborKey;
-
-        openList.push(initialStatePtr);
-        //now we can begin planning.
-        while(!openList.empty()){
-            currentStatePtr = openList.top();
-            openList.pop();
-
-            //if the state is closed, continue.
-            if (currentStatePtr->closed){
-                continue;
-            }
-
-            //close the popped pointer.
-            currentStatePtr->closed = true;
-            
-            //check if we have reached the goal state        
-            if (reached_goal(currentStatePtr, goalStatePtr)){
-                break;
-            }
-
-            //loop through the possible actions
-            for (auto action : possibleActions){
-                conditions = currentStatePtr->conditions;
-                //is the action possible?
-                actionPossible = apply_action(action, conditions, true);
-
-                //if the actions is possible
-                if (actionPossible){
-                    //conditions would be updated to new conditions.
-                    neighborKey = state_key(conditions);
-                    //check if the neighbor has been visited before
-                    if (openPtrList.find(neighborKey) != openPtrList.end()){
-                        //if the current key has been closed, continue
-                        if ((openPtrList[neighborKey])->closed){
-                            continue;
-                        }
-                        neighborStatePtr = openPtrList[neighborKey];
-                        if(neighborStatePtr->cost > currentStatePtr->cost + 1){
-                            neighborStatePtr->cost = currentStatePtr->cost + 1;
-                            neighborStatePtr->set_action(action);
-                            neighborStatePtr->parent = currentStatePtr;
-                            openList.push(neighborStatePtr);
-                        }
-                    }
-                    else{
-                        neighborStatePtr = new State();
-                        neighborStatePtr->conditions = conditions;
-                        neighborStatePtr->cost = currentStatePtr->cost + 1;
-                        neighborStatePtr->set_action(action);
-                        neighborStatePtr->parent = currentStatePtr;
-                        openList.push(neighborStatePtr);
-                        openPtrList[neighborKey] = neighborStatePtr;
-                    }
-                }
-            }
-        }
-        
-        //currentStatePtr must be the goal pointer
-        while(currentStatePtr->parent){
-            currentStatePtr = currentStatePtr->parent;
-            steps++;
-        }
-
-        initialStatePtr->closed = false;
-
-        //delete all elements in openPtrList.
-        auto it = openPtrList.begin();
-        while(it != openPtrList.end()){
-            delete (it->second);
-            it++;
-        }
-
-    return steps;
-    }
-}
-
 list<GroundedAction> planner(Env* env)
 {
-    State* initialStatePtr = new State();
-    State* goalStatePtr = new State();
-    State* currentStatePtr;
-    State* neighborStatePtr;
+    State initialState;
+    State goalState;
+    State currentState;
     vector<Action> possibleActions;
     vector<string> chosenSymbols;
     list<GroundedAction> plannedActions;
-    priority_queue<State*, vector<State*>, CompareF> openList;
+    string neighborKey;
+    priority_queue<State, vector<State>, CompareF> openList;
     unordered_map<string, string> substituteSymbols;
-    unordered_map<size_t, State*> openPtrList;
+    // unordered_map<string, State*> openPtrList;
+    unordered_set<State, StateHasher, StateComparator> openPtrList;
+    unordered_set<State, StateHasher, StateComparator>::const_iterator neighborStatePtr;
     unordered_set<Condition, ConditionHasher, ConditionComparator> conditions;
     bool actionPossible = false;
     int steps = 0;
-    size_t neighborKey;
 
     //convert all grounded conditions to condition and store it in the corresponding pointers.
     for (auto i : env->get_initial_conditions()){
-        initialStatePtr->conditions.insert(convertToConditions(i));
+        (initialState.conditions).insert(convertToConditions(i));
     }
 
     for (auto j : env->get_goal_conditions()){
-        goalStatePtr->conditions.insert(convertToConditions(j));
+        (goalState.conditions).insert(convertToConditions(j));
     }
 
     //iterate through all the actions in the environment and generate all possible actions.
@@ -1063,72 +986,78 @@ list<GroundedAction> planner(Env* env)
         substituteSymbols.clear();
     }
 
-    openList.push(initialStatePtr);
+    openList.push(initialState);
     //now we can begin planning.
     while(!openList.empty()){
+        // //infinite loop breaker
+        // if (steps > 500){
+        //     cout << "exceeded maximum number of trials" << endl;
+        //     break;
+        // }
         steps++;
-        currentStatePtr = openList.top();
+        currentState = openList.top();
         openList.pop();
 
         //if the state is closed, continue.
-        if (currentStatePtr->closed){
+        if (currentState.closed){
             continue;
         }
 
         //close the popped pointer.
-        currentStatePtr->closed = true;
+        currentState.closed = true;
         
         //check if we have reached the goal state        
-        if (reached_goal(currentStatePtr, goalStatePtr)){
+        if (reached_goal(currentState, goalState)){
             break;
         }
 
         //loop through the possible actions
         for (auto action : possibleActions){
-            conditions = currentStatePtr->conditions;
+            conditions = currentState.conditions;
             //is the action possible?
-            actionPossible = apply_action(action, conditions, false);
+            actionPossible = apply_action(action, conditions);
 
             //if the actions is possible
             if (actionPossible){
+                //create new neighbor State
+                State neighborState;
                 //conditions would be updated to new conditions.
-                neighborKey = state_key(conditions);
-                //check if the neighbor has been visited before
-                if (openPtrList.find(neighborKey) != openPtrList.end()){
-                    //if the current key has been closed, continue
-                    if ((openPtrList[neighborKey])->closed){
-                        continue;
-                    }
-                    neighborStatePtr = openPtrList[neighborKey];
-                    if(neighborStatePtr->cost > currentStatePtr->cost + 1){
-                        neighborStatePtr->cost = currentStatePtr->cost + 1;
-                        neighborStatePtr->set_action(action);
-                        neighborStatePtr->parent = currentStatePtr;
-                        openList.push(neighborStatePtr);
+                neighborState.conditions = conditions;
+                //check if neighbor has been visited before.
+                if (openPtrList.find(neighborState) != openPtrList.end()){
+                    neighborState = *openPtrList.find(neighborState);
+                }
+                //if the current neighbor has been closed, continue
+                if (neighborState.closed){
+                    continue;
+                }
+
+                if(neighborState.cost){
+                    if(neighborState.cost > currentState.cost + 1){
+                        neighborState.cost = currentState.cost + 1;
+                        neighborState.set_action(action);
+                        neighborState.parent = &currentState;
+                        openList.push(neighborState);
                     }
                 }
                 else{
-                    neighborStatePtr = new State();
-                    neighborStatePtr->conditions = conditions;
-                    neighborStatePtr->cost = currentStatePtr->cost + 1;
-                    neighborStatePtr->set_action(action);
-                    neighborStatePtr->parent = currentStatePtr;
-                    neighborStatePtr->h = calculate_heuristic(HEURISTIC, neighborStatePtr, goalStatePtr, possibleActions);
-                    openList.push(neighborStatePtr);
-                    openPtrList[neighborKey] = neighborStatePtr;
+                    neighborState.cost = currentState.cost + 1;
+                    neighborState.set_action(action);
+                    neighborState.parent = &currentState;
+                    openList.push(neighborState);
                 }
             }
         }
     }
     
     //currentStatePtr must be the goal pointer
-    while(currentStatePtr->parent){
-        plannedActions.push_back(*(currentStatePtr->gAction));
-        currentStatePtr = currentStatePtr->parent;
+    while(currentState.parent){
+        plannedActions.push_back(*(currentState.gAction));
+        currentState = *(currentState.parent);
     }
     plannedActions.reverse();
 
-    cout << "number of expansions "<< steps << endl;
+    cout << "number of steps" << steps << endl;
 
     return plannedActions;
 }

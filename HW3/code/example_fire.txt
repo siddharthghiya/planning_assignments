@@ -1,0 +1,36 @@
+Symbols: A,B,C,D,E,F,W,Q
+Initial conditions: At(B), Isflying(Q), Uav(Q), Firealpha(Q), Loc(A), Loc(B), Loc(C), Loc(D), Loc(E), Loc(F), Loc(W), BatteryLow(Q)
+Goal conditions: Firedelta(Q)
+
+Actions:
+        Land(b)
+        Preconditions: Isflying(b), Uav(b)
+        Effects: !Isflying(b)
+
+        Fly(b)
+        Preconditions: !Isflying(b), !Batterylow(b), Uav(b)
+        Effects: Isflying(b)
+
+        Charge(b)
+        Preconditions: !Isflying(b), Batterylow(b), Uav(b)
+        Effects: !Batterylow(b)
+
+        Move(n,m)
+        Preconditions: !Isflying(Q), !At(n), Loc(n), At(m), Loc(m)
+        Effects: At(n), !At(m)
+
+        Fillwater(b)
+        Preconditions: !Isflying(b), !Haswater(b), Uav(b), At(W)
+        Effects: Haswater(b)
+        
+        Extinguishalpha(b)
+        Preconditions: Isflying(b), Haswater(b), !Batterylow(b), Firealpha(b), Uav(b), At(F)
+        Effects: !Haswater(b), Batterylow(b), Firebeta(b), !Firealpha(b)
+
+        Extinguishbeta(b)
+        Preconditions: Isflying(b), Haswater(b), !Batterylow(b), Firebeta(b), Uav(b), At(F)
+        Effects: !Haswater(b), Batterylow(b), Firegamma(b), !Firebeta(b)
+
+        Extinguishgamma(b)
+        Preconditions: Isflying(b), Haswater(b), !Batterylow(b), Firegamma(b), Uav(b), At(F)
+        Effects: !Haswater(b), Batterylow(b), Firedelta(b), !Firegamma(b)
