@@ -1,10 +1,10 @@
 Symbols: A,B,C,D,E,F,W,Q
-Initial conditions: At(B), Isflying(Q), Uav(Q), Firealpha(Q), Loc(A), Loc(B), Loc(C), Loc(D), Loc(E), Loc(F), Loc(W), BatteryLow(Q)
+Initial conditions: Atquad(B), Isflying(Q), Uav(Q), Firealpha(Q), Loc(A), Loc(B), Loc(C), Loc(D), Loc(E), Loc(F), Loc(W), BatteryLow(Q), Atrobot(A)
 Goal conditions: Firedelta(Q)
 
 Actions:
-        Land(b)
-        Preconditions: Isflying(b), Uav(b)
+        Land(b,c)
+        Preconditions: Isflying(b), Uav(b), Atquad(c), Atrobot(c), Loc(c)
         Effects: !Isflying(b)
 
         Fly(b)
@@ -16,21 +16,25 @@ Actions:
         Effects: !Batterylow(b)
 
         Move(n,m)
-        Preconditions: !Isflying(Q), !At(n), Loc(n), At(m), Loc(m)
-        Effects: At(n), !At(m)
+        Preconditions: !Atrobot(n), Loc(n), Atrobot(m), Loc(m)
+        Effects: Atrobot(n), !Atrobot(m)
+
+        Movewithquad(n,m)
+        Preconditions: !Atrobot(n), !Atquad(n), Atrobot(m), Atquad(m), !Isflying(Q), Loc(n), Loc(m)
+        Effects: Atrobot(n), !Atrobot(m), Atquad(n), !Atquad(m)
 
         Fillwater(b)
-        Preconditions: !Isflying(b), !Haswater(b), Uav(b), At(W)
+        Preconditions: !Isflying(b), !Haswater(b), Uav(b), Atquad(W)
         Effects: Haswater(b)
         
         Extinguishalpha(b)
-        Preconditions: Isflying(b), Haswater(b), !Batterylow(b), Firealpha(b), Uav(b), At(F)
+        Preconditions: Isflying(b), Haswater(b), !Batterylow(b), Firealpha(b), Uav(b), Atquad(F)
         Effects: !Haswater(b), Batterylow(b), Firebeta(b), !Firealpha(b)
 
         Extinguishbeta(b)
-        Preconditions: Isflying(b), Haswater(b), !Batterylow(b), Firebeta(b), Uav(b), At(F)
+        Preconditions: Isflying(b), Haswater(b), !Batterylow(b), Firebeta(b), Uav(b), Atquad(F)
         Effects: !Haswater(b), Batterylow(b), Firegamma(b), !Firebeta(b)
 
         Extinguishgamma(b)
-        Preconditions: Isflying(b), Haswater(b), !Batterylow(b), Firegamma(b), Uav(b), At(F)
+        Preconditions: Isflying(b), Haswater(b), !Batterylow(b), Firegamma(b), Uav(b), Atquad(F)
         Effects: !Haswater(b), Batterylow(b), Firedelta(b), !Firegamma(b)

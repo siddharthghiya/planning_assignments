@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <queue>
+#include <time.h>
 
 #define SYMBOLS 0
 #define INITIAL 1
@@ -651,7 +652,6 @@ Env* create_env(char* filename)
             else if (parser == ACTION_DEFINITION)
             {
                 const char* line_c = line.c_str();
-                cout << line_c << endl;
                 if (regex_match(line_c, conditionRegex))
                 {
                     const std::vector<int> submatches = { 1, 2 };
@@ -947,14 +947,21 @@ int calculate_heuristic(int heuristic_id, State* initialStatePtr, State* goalSta
     if (heuristic_id == 2){
         State* currentStatePtr;
         State* neighborStatePtr;
+        State* initialStatePtr_2 = new State();
         priority_queue<State*, vector<State*>, CompareF> openList;
         unordered_map<size_t, State*> openPtrList;
         unordered_set<Condition, ConditionHasher, ConditionComparator> conditions;
         bool actionPossible = false;
-        int steps = 0;
         size_t neighborKey;
+        size_t currentKey;
+        int heuristic;
 
-        openList.push(initialStatePtr);
+        initialStatePtr_2->parent = NULL;
+        initialStatePtr_2->cost = 0;
+        initialStatePtr_2->conditions = initialStatePtr->conditions;
+        initialStatePtr_2->closed = false;
+
+        openList.push(initialStatePtr_2);
         //now we can begin planning.
         while(!openList.empty()){
             currentStatePtr = openList.top();
@@ -992,7 +999,6 @@ int calculate_heuristic(int heuristic_id, State* initialStatePtr, State* goalSta
                         neighborStatePtr = openPtrList[neighborKey];
                         if(neighborStatePtr->cost > currentStatePtr->cost + 1){
                             neighborStatePtr->cost = currentStatePtr->cost + 1;
-                            neighborStatePtr->set_action(action);
                             neighborStatePtr->parent = currentStatePtr;
                             openList.push(neighborStatePtr);
                         }
@@ -1001,7 +1007,6 @@ int calculate_heuristic(int heuristic_id, State* initialStatePtr, State* goalSta
                         neighborStatePtr = new State();
                         neighborStatePtr->conditions = conditions;
                         neighborStatePtr->cost = currentStatePtr->cost + 1;
-                        neighborStatePtr->set_action(action);
                         neighborStatePtr->parent = currentStatePtr;
                         openList.push(neighborStatePtr);
                         openPtrList[neighborKey] = neighborStatePtr;
@@ -1009,23 +1014,20 @@ int calculate_heuristic(int heuristic_id, State* initialStatePtr, State* goalSta
                 }
             }
         }
-        
-        //currentStatePtr must be the goal pointer
-        while(currentStatePtr->parent){
-            currentStatePtr = currentStatePtr->parent;
-            steps++;
-        }
 
-        initialStatePtr->closed = false;
-
-        //delete all elements in openPtrList.
+        heuristic = currentStatePtr->cost;
+        // delete all elements in openPtrList.
         auto it = openPtrList.begin();
         while(it != openPtrList.end()){
+            if (it->second == currentStatePtr){
+            }
             delete (it->second);
             it++;
         }
+        //delete initialStatePtr_2.
+        delete initialStatePtr_2;
 
-    return steps;
+        return heuristic;
     }
 }
 
@@ -1136,7 +1138,7 @@ list<GroundedAction> planner(Env* env)
 int main(int argc, char* argv[])
 {
     // DO NOT CHANGE THIS FUNCTION
-    char* filename = (char*)("example_triangle.txt");
+    char* filename = (char*)("example.txt");
     if (argc > 1)
         filename = argv[1];
 
@@ -1147,7 +1149,11 @@ int main(int argc, char* argv[])
         cout << *env;
     }
 
+    time_t start = time(NULL);
     list<GroundedAction> actions = planner(env);
+    time_t end = time(NULL);
+
+    cout << "time taken is " << end-start << endl;
 
     cout << "\nPlan: " << endl;
     for (GroundedAction gac : actions)
