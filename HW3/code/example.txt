@@ -10,7 +10,3 @@ Actions:
         Move(b,x,y)
         Preconditions: On(b,x), Clear(b), Clear(y), Block(b), Block(y)
         Effects: On(b,y), Clear(x), !On(b,x), !Clear(y)
-
-        Land(z)
-        Preconditions: Isflying(z), Uav(z)
-        Effects: !Isflying(z)

@@ -18,7 +18,7 @@
 #define ACTION_DEFINITION 4
 #define ACTION_PRECONDITION 5
 #define ACTION_EFFECT 6
-#define HEURISTIC 2
+#define HEURISTIC 0
 
 /*
 HEURISTIC definition:
@@ -1149,11 +1149,7 @@ int main(int argc, char* argv[])
         cout << *env;
     }
 
-    time_t start = time(NULL);
     list<GroundedAction> actions = planner(env);
-    time_t end = time(NULL);
-
-    cout << "time taken is " << end-start << endl;
 
     cout << "\nPlan: " << endl;
     for (GroundedAction gac : actions)
