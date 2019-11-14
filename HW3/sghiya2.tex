@@ -1,0 +1,187 @@
+\documentclass[12pt]{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bm}
+\usepackage{minted}
+\usepackage{enumerate}
+\usepackage{fancyvrb}
+\usepackage[top=1in, bottom=1in, left=1in, right=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{placeins}
+\usepackage{tikz}
+\usepackage{tikzsymbols}
+\usepackage[most]{tcolorbox}
+\usepackage{enumitem}
+\usepackage{algpseudocode,algorithm,algorithmicx}
+\newcommand*\DNA{\textsc{dna}}
+\usetikzlibrary{positioning,calc}
+\usepackage{graphicx}
+\usepackage{amsmath}
+%-------------------------------------------------------------------------------
+% Custom commands
+\usepackage{xcolor} %hilight
+\newcommand{\hilight}[1]{\colorbox{yellow}{#1}}
+%-------------------------------------------------------------------------------
+
+\newtcolorbox[]{solution}[1][]{%
+    breakable,
+    enhanced,
+    colback=white,
+    title=Solution,
+    #1
+}
+
+
+\begin{document}
+\begin{center}
+  \centerline{\textsc{\LARGE  Homework 3}}
+  \vspace{1em}
+  \textsc{\large CMU 16-782 : Planning and Decision Making in Robotics} \\
+\end{center}
+
+\section{Compilation Instructions}
+Compile using : g++ planner.cpp in terminal \\
+Run using : ./a.out filename.txt \\
+Replace filename.txt with : 
+\begin{enumerate}
+    \item \textbf{Blocks world} : example.txt
+    \item \textbf{Triangles and Blocks world} : example$\_$triangle.txt
+    \item \textbf{Fire Extinguisher world} : example$\_$fire.txt
+\end{enumerate}
+
+\section{General Instructions}
+Following are the different heuristics cases which I tried:
+\begin{enumerate}
+    \item \textbf{No heuristic} : Simple A-star search with no heuristic.
+    \item \textbf{In admissible heuristic} : Counts the difference in number of true conditions between current state and the goal state.
+    \item \textbf{Admissible heuristic} : Does another A-star search from each newly discovered state. This A-star search does not consider negative effects of the actions. The heuristic assigned in such a case is the number of steps required to reach goal state with the mentioned A-star search.
+\end{enumerate}
+ 
+
+\newpage
+\section{Blocks Environment}
+\subsection{Explanation of Environment}
+\begin{enumerate}
+    \item \textbf{Symbols} : A, B, C, Table
+    
+    \item \textbf{Conditions}:
+    \begin{enumerate}
+        \item On(x,y) : Block x is on y.
+        \item Block(x) : x is a block.
+        \item Clear(x) : x has no block on top of it.
+    \end{enumerate}
+    
+    \item \textbf{Actions}:
+    \begin{enumerate}
+        \item MoveToTable(b,x) : Move block b which is on block x to table.
+        \item Move(b,x,y) : Move block b from block x to block y.
+    \end{enumerate}
+\end{enumerate}
+
+\subsection{Performance}
+\begin{center}
+\begin{tabular}{| c | c | c |}
+\hline
+  & \textbf{Number of Expansions} & \textbf{Time Taken(in seconds)} \\ 
+ \hline
+ \textbf{No heuristic} & 13 & 1 \\  
+ \hline
+ \textbf{Inadmissible Heuristic} & 16 & 1 \\   
+ \hline
+ \textbf{Admissible Heuristic} & 4 & 1 \\
+\hline
+\end{tabular}
+\end{center}
+
+\newpage
+\section{Triangles and Blocks Environment}
+\subsection{Explanation of Environment}
+\begin{enumerate}
+    \item \textbf{Symbols} : B0, B1, B2, B3, B4, T0, T1, Table
+    
+    \item \textbf{Conditions}:
+    \begin{enumerate}
+        \item On(x,y) : x is on y.
+        \item Block(x) : x is a block.
+        \item Clear(x) : x has no block/triangle on top of it.
+        \item Triangle(x) : x is a triangle.
+        \item NotTable(x) : x is not a table.
+        
+    \end{enumerate}
+    
+    \item \textbf{Actions}:
+    \begin{enumerate}
+        \item MoveToTable(b,x) : Move block/triangle b which is on block x to table.
+        \item Move(b,x,y) : Move block/triangle b from block x to block y.
+    \end{enumerate}
+\end{enumerate}
+
+\subsection{Performance}
+\begin{center}
+\begin{tabular}{| c | c | c |}
+\hline
+  & \textbf{Number of Expansions} & \textbf{Time Taken(in seconds)} \\ 
+ \hline
+ \textbf{No heuristic} & 648 & 8 \\  
+ \hline
+ \textbf{Inadmissible Heuristic} & 297 & 3 \\   
+ \hline
+ \textbf{Admissible Heuristic} & 24 & 874 \\
+\hline
+\end{tabular}
+\end{center}
+
+\newpage
+\section{Fire Extinguisher Environment}
+\subsection{Explanation of Environment}
+\begin{enumerate}
+    \item \textbf{Symbols} : A, B, C, D, E, F, W, Q
+    
+    \item \textbf{Conditions}:
+    \begin{enumerate}
+        \item Atrobot(x) : Robot is at x.
+        \item Atquad(x) : Quadcopter is at x.
+        \item Isflying(x) : x is flying.
+        \item Uav(x) : x is a Quadcopter.
+        \item Hascharge(x) : Quadcopter has charge.
+        \item Batterylow(x) : Quadcopter has low battery.
+        \item Haswater(x) : Quadcopter has water.
+        \item Firealpha(x) : Fire in the initial stage.
+        \item Firebeta(x) : Fire after being extinguished once.
+        \item Firegamma(x) : Fire after being extinguished twice.
+        \item Firedelta(x) : Fire after being extinguished thrice.
+        \item Loc(x) : x is a location.
+    \end{enumerate}
+    
+    \item \textbf{Actions}:
+    \begin{enumerate}
+        \item Land(b,c) : Land quadcopter on robot at location c.
+        \item Fly(b) : Fly quadcopter.
+        \item Charge(b) : Charge quadcopter.
+        \item Move(n,m) : Move the robot from location m to location n.
+        \item Movewithquad(n,m) : Move the robot with the quadcopter from location m to location n.
+        \item Fillwater(b) : Fill quadcopter with water.
+        \item Extinguishalpha(b) : First round of extinguishing.
+        \item Extinguishbeta(b) : Second round of extinguishing.
+        \item Extinguishgamma(b) : Third round of extinguishing.
+    \end{enumerate}
+\end{enumerate}
+
+\subsection{Performance}
+\begin{center}
+\begin{tabular}{| c | c | c |}
+\hline
+  & \textbf{Number of Expansions} & \textbf{Time Taken(in seconds)} \\ 
+ \hline
+ \textbf{No heuristic} & 773 & 3 \\  
+ \hline
+ \textbf{Inadmissible Heuristic} & 777 & 3 \\   
+ \hline
+ \textbf{Admissible Heuristic} & 552 & 1143 \\
+\hline
+\end{tabular}
+\end{center}
+
+
+\end{document}
